@@ -1,4 +1,4 @@
-import { css } from "lit";
+import { css } from 'lit'
 
 export default css`
     ha-card {
@@ -174,4 +174,4 @@ export default css`
             transform: rotate(360deg);
         }
     }
-`;
+`
