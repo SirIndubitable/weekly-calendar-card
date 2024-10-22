@@ -1,6 +1,7 @@
 .parcel-cache
 node_modules
 dist
+coverage
 
 # Compiled class file
 *.class

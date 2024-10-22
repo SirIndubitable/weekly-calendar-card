@@ -40,18 +40,6 @@ export class Helpers {
 
         return multiDay || Math.abs(startDate.diff(endDate, 'days').toObject().days) === 1;
     }
-
-    isToday(date) {
-        return Helpers.isSameDay(date, DateTime.now());
-    }
-
-    isTomorrow(date) {
-        return Helpers.isSameDay(date, DateTime.now().plus({ days: 1 }));
-    }
-
-    isYesterday(date) {
-        return Helpers.isSameDay(date, DateTime.now().minus({ days: 1 }));
-    }
 }
 
 export class CalendarEvent {

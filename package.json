@@ -11,7 +11,7 @@
     }
   },
   "scripts": {
-    "test": "jest",
+    "test": "jest --coverage",
     "build": "parcel build",
     "lint": "eslint ./src"
   },
