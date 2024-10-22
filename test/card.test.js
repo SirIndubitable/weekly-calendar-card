@@ -1,3 +1,4 @@
+/* global test, expect */
 import { DateTime } from 'luxon'
 import { CalendarEvent, Helpers } from '../src/data.js'
 

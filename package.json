@@ -13,8 +13,8 @@
   "scripts": {
     "test": "jest --coverage",
     "build": "parcel build",
-    "lint": "standard ./src",
-    "lint-fix": "standard --fix ./src"
+    "lint": "standard",
+    "lint-fix": "standard --fix"
   },
   "repository": {
     "type": "git",
