@@ -1,0 +1,7 @@
+{
+    "name": "Weekly Calendar Card",
+    "content_in_root": false,
+    "render_readme": true,
+    "filename": "weekly-calendar-card.js",
+    "homeassistant": "2024.10"
+  }
