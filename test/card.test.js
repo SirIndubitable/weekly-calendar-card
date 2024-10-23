@@ -1,6 +1,8 @@
-/* global test, expect */
+/* global test, expect, jest */
 import { DateTime } from 'luxon'
 import { CalendarEvent, Helpers } from '../src/data.js'
+
+Date.now = jest.fn(() => new Date(Date.UTC(2017, 1, 14, 15, 35)).valueOf())
 
 test('mod', () => {
   expect(Helpers.mod(14, 7)).toBe(0)
@@ -69,6 +71,12 @@ test('CalendarEvent._getEventClass', () => {
 
   // Multiday Middle event
   start = DateTime.now().plus({ days: 1 }).startOf('day')
+  end = start.plus({ days: 1 })
+  expect(CalendarEvent._getEventClass(true, false, start, end, originalStart, originalEnd))
+    .toBe('multiday future')
+
+  // Multiday Middle event, day before end day
+  start = originalEnd.minus({ days: 1 }).startOf('day')
   end = start.plus({ days: 1 })
   expect(CalendarEvent._getEventClass(true, false, start, end, originalStart, originalEnd))
     .toBe('multiday future')
