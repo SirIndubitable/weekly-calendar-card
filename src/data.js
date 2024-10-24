@@ -199,10 +199,10 @@ export class CalendarEvent {
     const now = DateTime.now()
     if (multiDay) {
       classes.push('multiday')
-      if (Helpers.isSameDay(originalStart, start)) {
+      if (+start === +originalStart) {
         classes.push('start')
       }
-      if (Helpers.isSameDay(originalEnd, end)) {
+      if (+end === +originalEnd) {
         classes.push('end')
       }
     }
