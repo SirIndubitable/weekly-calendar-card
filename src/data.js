@@ -86,14 +86,14 @@ export class CalendarEvent {
       return summary
     }
 
-    const formattedStart = this.start.toFormat(config.timeFormat).replace('AM', 'am').replace('PM', 'pm')
-    const formattedEnd = this.end.toFormat(config.timeFormat).replace('AM', 'am').replace('PM', 'pm')
+    const formattedStart = config.formatTime(this.start)
+    const formattedEnd = config.formatTime(this.end)
 
     if (this.multiDay) {
       const isFullDay = Helpers.isFullDay(this.start, this.end)
       const isStart = +this.start === +this.originalStart
       const isEnd = +this.end === +this.originalEnd
-      const isStartOfWeek = this.start.weekday === config.startOfWeek
+      const isStartOfWeek = config.isStartOfWeek(this.start)
 
       // Start of week, we should display the summary since it's not connected to the rest of the event
       if ((isStart && isFullDay) ||
@@ -124,10 +124,10 @@ export class CalendarEvent {
   }
 
   static Build (config, calendar, eventData) {
-    if (CalendarEvent._shouldFilterEvent(eventData, config.filter)) {
+    if (config.shouldFilterOut(eventData.summary)) {
       return []
     }
-    if (CalendarEvent._shouldFilterEvent(eventData, calendar.filter)) {
+    if (calendar.shouldFilterOut(eventData.summary)) {
       return []
     }
 
@@ -154,14 +154,6 @@ export class CalendarEvent {
     } else {
       return [new CalendarEvent(eventData, startDate, endDate, calendar)]
     }
-  }
-
-  static _shouldFilterEvent (event, filter) {
-    if (filter == null) {
-      return false
-    }
-
-    return event.summary.match(filter)
   }
 
   static _getPrefix (summary, prefix) {

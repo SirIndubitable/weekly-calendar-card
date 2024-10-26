@@ -1,6 +1,5 @@
 /* global customElements */
 import { WeeklyCalendarCard } from './card'
-// import { version } from '../package.json';
 
 customElements.define('weekly-calendar-card', WeeklyCalendarCard)
 

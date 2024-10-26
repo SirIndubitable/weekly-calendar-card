@@ -2,6 +2,7 @@ import { LitElement, html } from 'lit'
 import { DateTime, Settings as LuxonSettings, Info as LuxonInfo } from 'luxon'
 import styles from './card.styles.js'
 import { CalendarEvent, Helpers } from './data.js'
+import { Config } from './config.js'
 
 export class WeeklyCalendarCard extends LitElement {
   static styles = styles
@@ -10,10 +11,6 @@ export class WeeklyCalendarCard extends LitElement {
   _loading = 0
   _events = {}
   _jsonDays = ''
-  _calendars
-  _updateInterval
-  _language
-  _startDate
 
   /**
    * Get properties
@@ -37,60 +34,20 @@ export class WeeklyCalendarCard extends LitElement {
   setConfig (config) {
     this._card_config = config
 
-    if (!config.calendars) {
-      throw new Error('No calendars are configured')
+    this._config = new Config(config)
+
+    if (this._config.locale) {
+      LuxonSettings.defaultLocale = this._config.locale
     }
 
-    config.calendars.forEach((calendar) => {
-      if (!calendar.entity) {
-        throw new Error('Calendar must define an entity')
-      }
-    })
+    this._title = this._config.title
+      ? html`<h1 class="card-title">${this._config.title}</h1>`
+      : ''
 
-    this._weekdays = [
-      'monday',
-      'tuesday',
-      'wednesday',
-      'thursday',
-      'friday',
-      'saturday',
-      'sunday'
-    ]
-
-    this._config = {}
-    this._config.startOfWeek = this._weekdays.indexOf(config.startOfWeek ?? 'sunday') + 1
-    this._config.filter = config.filter ?? false
-    this._config.dayFormat = config.dayFormat ?? 'd'
-    this._config.timeFormat = config.timeFormat ?? 'HH:mm'
-
-    this._title = config.title ?? null
-    this._calendars = config.calendars
-    this._numberOfWeeks = config.weeks ?? 4
-    this._updateInterval = config.updateInterval ?? 60
-    this._hidePastEvents = config.hidePastEvents ?? false
-
-    if (config.locale) {
-      LuxonSettings.defaultLocale = config.locale
-    }
-
-    this._startDate = this._getStartDate()
-    this._language = Object.assign(
-      {},
-      {
-        fullDay: 'Entire day',
-        today: 'Today',
-        tomorrow: 'Tomorrow',
-        yesterday: 'Yesterday',
-        sunday: LuxonInfo.weekdays('short')[6],
-        monday: LuxonInfo.weekdays('short')[0],
-        tuesday: LuxonInfo.weekdays('short')[1],
-        wednesday: LuxonInfo.weekdays('short')[2],
-        thursday: LuxonInfo.weekdays('short')[3],
-        friday: LuxonInfo.weekdays('short')[4],
-        saturday: LuxonInfo.weekdays('short')[5]
-      },
-      config.texts ?? {}
-    )
+    const localizedWeekDays = LuxonInfo.weekdays(this._config.weekdayFormat)
+    this._heading = html`${this._config.weekdays.map((weekday) => {
+            return `<div class="heading">${localizedWeekDays[weekday]}</div>`
+        }).join('')}`
   }
 
   /**
@@ -104,25 +61,17 @@ export class WeeklyCalendarCard extends LitElement {
       this._waitForHassAndConfig()
     }
 
-    const cardClasses = []
-    if (this._compact) {
-      cardClasses.push('compact')
-    }
-
     return html`
-          <ha-card class="${cardClasses.join(' ')}">
+          <ha-card>
               <div class="card-content">
                   ${this._error
                       ? html`<ha-alert alert-type="error">${this._error}</ha-alert>`
                       : ''
                   }
-                  ${this._title
-                      ? html`<h1 class="card-title">${this._title}</h1>`
-                      : ''
-                  }
+                  ${this._title}
 
                   <div class="grid-container heading">
-                      ${this._renderHeading()}
+                      ${this._heading}
                   </div>
                   <div class="grid-container">
                       ${this._renderDays()}
@@ -136,28 +85,6 @@ export class WeeklyCalendarCard extends LitElement {
       `
   }
 
-  _renderHeading () {
-    const weekDays = [
-      this._language.sunday,
-      this._language.monday,
-      this._language.tuesday,
-      this._language.wednesday,
-      this._language.thursday,
-      this._language.friday,
-      this._language.saturday
-    ]
-
-    return html`
-    <div class="heading">${weekDays[this._config.startOfWeek % 7]}</div>
-    <div class="heading">${weekDays[(this._config.startOfWeek + 1) % 7]}</div>
-    <div class="heading">${weekDays[(this._config.startOfWeek + 2) % 7]}</div>
-    <div class="heading">${weekDays[(this._config.startOfWeek + 3) % 7]}</div>
-    <div class="heading">${weekDays[(this._config.startOfWeek + 4) % 7]}</div>
-    <div class="heading">${weekDays[(this._config.startOfWeek + 5) % 7]}</div>
-    <div class="heading">${weekDays[(this._config.startOfWeek + 6) % 7]}</div>
-    `
-  }
-
   _renderDays () {
     if (!this._days) {
       return html``
@@ -169,7 +96,7 @@ export class WeeklyCalendarCard extends LitElement {
                   <div class="day ${day.class}" data-date="${day.date.day}" data-weekday="${day.date.weekday}" data-month="${day.date.month}" data-year="${day.date.year}" data-week="${day.date.weekNumber}">
                       <div class="date">
                       <hr/>
-                        <span class="number">${day.date.toFormat(this._config.dayFormat)}</span>
+                        <span class="number">${this._config.formatDay(day.date)}</span>
                       </div>
 
                       <div class="events">
@@ -195,7 +122,7 @@ export class WeeklyCalendarCard extends LitElement {
   }
 
   _waitForHassAndConfig () {
-    if (!this.hass || !this._calendars) {
+    if (!this.hass || !this._config) {
       window.setTimeout(() => {
         this._waitForHassAndConfig()
       }, 50)
@@ -215,29 +142,27 @@ export class WeeklyCalendarCard extends LitElement {
     this._error = ''
     this._events = {}
 
-    this._startDate = this._getStartDate()
-    const startDate = this._startDate
-    const endDate = this._startDate.plus({ days: 7 * this._numberOfWeeks })
+    const startDate = this._config.startDate
+    const endDate = this._config.endDate
 
-    this._calendars.forEach(calendar => {
+    this._config.calendars.forEach(calendar => {
       this._loading++
       const request = 'calendars/' + calendar.entity + '?start=' + encodeURIComponent(startDate.toISO()) + '&end=' + encodeURIComponent(endDate.toISO())
-      this.hass.callApi(
-        'get',
-        request
-      ).then(response => {
-        response.forEach(event => {
-          this._safePushEventData(
-            CalendarEvent.Build(this._config, calendar, event))
+      this.hass
+        .callApi('get', request)
+        .then(response => {
+          response.forEach(event => {
+            this._safePushEventData(CalendarEvent.Build(this._config, calendar, event))
+          })
         })
+        .catch(error => {
+          console.error(error)
+          this._error = `Error while fetching calendar ${calendar.entity}: ${error.error}`
+          this._loading = 0
 
-        this._loading--
-      }).catch(error => {
-        console.error(error)
-        this._error = 'Error while fetching calendar: ' + error.error
-        this._loading = 0
-        throw new Error(this._error)
-      })
+          throw new Error(this._error)
+        })
+      this._loading--
     })
 
     const checkLoading = window.setInterval(() => {
@@ -250,7 +175,7 @@ export class WeeklyCalendarCard extends LitElement {
 
         window.setTimeout(() => {
           this._updateEvents()
-        }, this._updateInterval * 1000)
+        }, this._config.updateInterval * 1000)
       }
     }, 50)
 
@@ -302,14 +227,11 @@ export class WeeklyCalendarCard extends LitElement {
   _updateCard () {
     const days = []
 
-    let startDate = this._startDate
-    const endDate = this._startDate.plus({ days: 7 * this._numberOfWeeks })
-
     let yesterdayEvents = []
-    while (startDate < endDate) {
+    this._config.days.forEach(currentDay => {
       let events = []
 
-      const dateKey = startDate.toISODate()
+      const dateKey = currentDay.toISODate()
       if (dateKey in this._events) {
         events = this._events[dateKey].sort(CalendarEvent.compareTo)
       }
@@ -317,7 +239,7 @@ export class WeeklyCalendarCard extends LitElement {
       // This loop reorders the multi-day events so that they are displayed in the
       // same location on the calendar as the previous day of the event.
       for (let todayIndex = 0; todayIndex < events.length; todayIndex++) {
-        if (startDate.weekday === this._config.startOfWeek) {
+        if (this._config.isStartOfWeek(currentDay)) {
           continue
         }
 
@@ -348,28 +270,18 @@ export class WeeklyCalendarCard extends LitElement {
       }
 
       days.push({
-        date: startDate,
+        date: currentDay,
         events,
-        class: this._getDayClass(startDate)
+        class: this._getDayClass(currentDay)
       })
 
       yesterdayEvents = events
-      startDate = startDate.plus({ days: 1 })
-    }
+    })
 
     const jsonDays = JSON.stringify(days)
     if (jsonDays !== this._jsonDays) {
       this._days = days
       this._jsonDays = jsonDays
     }
-  }
-
-  _getStartDate () {
-    let startDate = DateTime.now().startOf('day')
-    const dayOffset = Helpers.mod(startDate.weekday - this._config.startOfWeek, 7)
-
-    startDate = startDate.minus({ days: dayOffset })
-
-    return startDate
   }
 }
