@@ -1,6 +1,7 @@
 /* global test, expect, jest */
 import { DateTime } from 'luxon'
 import { CalendarEvent, Helpers } from '../src/data.js'
+import { Config, CalendarConfig } from '../src/config.js'
 
 Date.now = jest.fn(() => new Date(Date.UTC(2017, 1, 14, 15, 35)).valueOf())
 
@@ -88,12 +89,13 @@ test('CalendarEvent._getEventClass', () => {
     .toBe('multiday end future')
 })
 
-const config = {
-  timeFormat: 'h:mma'
-}
-const calendar = {
+const config = new Config({
+  calendars: []
+})
+const calendar = new CalendarConfig({
+  entity: 'bar',
   prefix: 'foo'
-}
+})
 function CreateEvent (originalStart, originalEnd, eventStart, eventEnd) {
   const eventData = {
     summary: 'Test Event',
@@ -114,7 +116,7 @@ test('CalendarEvent.renderSummary(event)', () => {
   const start = DateTime.local(2024, 10, 1, 11, 47)
   const event = CreateEvent(start, start.plus({ hours: 1 }))
 
-  expect(event.renderSummary(config)).toBe('11:47am foo Test Event')
+  expect(event.renderSummary(config)).toBe('11:47 foo Test Event')
 })
 
 test('CalendarEvent.renderSummary(fullDayEvent)', () => {
@@ -136,7 +138,7 @@ test('CalendarEvent.renderSummary(multiDayEvent)', () => {
     originalStart,
     originalStart.startOf('day').plus({ days: '1' }))
 
-  expect(event.renderSummary(config)).toBe('3:30pm foo Test Event')
+  expect(event.renderSummary(config)).toBe('15:30 foo Test Event')
 
   // Multiday End event
   event = CreateEvent(
@@ -145,9 +147,9 @@ test('CalendarEvent.renderSummary(multiDayEvent)', () => {
     originalEnd.startOf('day'),
     originalEnd)
 
-  expect(event.renderSummary(config)).toBe('4:00pm')
-  expect(event.renderSummary({ timeFormat: 'h:mma', startOfWeek: event.start.weekday }))
-    .toBe('foo Test Event 4:00pm')
+  expect(event.renderSummary(config)).toBe('16:00')
+  expect(event.renderSummary(new Config({ startOfWeek: 'saturday', calendars: [] })))
+    .toBe('foo Test Event 16:00')
 
   // Multiday Start event, full day
   originalStart = DateTime.local(2024, 10, 1)
@@ -168,7 +170,7 @@ test('CalendarEvent.renderSummary(multiDayEvent)', () => {
     originalEnd)
 
   expect(event.renderSummary(config)).toBe('\xa0')
-  expect(event.renderSummary({ timeFormat: 'h:mma', startOfWeek: event.start.weekday }))
+  expect(event.renderSummary(new Config({ startOfWeek: 'friday', calendars: [] })))
     .toBe('foo Test Event')
 
   // Multiday middle event
@@ -183,7 +185,7 @@ test('CalendarEvent.renderSummary(multiDayEvent)', () => {
 
   expect(event.renderSummary(config))
     .toBe('\xa0')
-  expect(event.renderSummary({ timeFormat: 'h:mma', startOfWeek: event.start.weekday }))
+  expect(event.renderSummary(new Config({ startOfWeek: 'thursday', calendars: [] })))
     .toBe('foo Test Event')
 })
 
@@ -259,10 +261,10 @@ test('CalendarEvent.Build(FilteredEvent)', () => {
     end: { dateTime: end.toISO() }
   }
 
-  let events = CalendarEvent.Build({ filter: 'est' }, calendar, eventData)
+  let events = CalendarEvent.Build(new Config({ filter: 'est', calendars: [] }), calendar, eventData)
   expect(events.length).toBe(0)
 
-  events = CalendarEvent.Build(config, { filter: 'est' }, eventData)
+  events = CalendarEvent.Build(config, new CalendarConfig({ entity: 'bar', filter: 'est' }), eventData)
   expect(events.length).toBe(0)
 })
 
@@ -275,7 +277,7 @@ test('CalendarEvent.Build(HidePastEvent)', () => {
     end: { dateTime: end.toISO() }
   }
 
-  let events = CalendarEvent.Build({ hidePastEvents: true }, calendar, eventData)
+  let events = CalendarEvent.Build(new Config({ hidePastEvents: true, calendars: [] }), calendar, eventData)
   expect(events.length).toBe(1)
 
   start = DateTime.now().minus({ hours: 1 })
@@ -286,7 +288,7 @@ test('CalendarEvent.Build(HidePastEvent)', () => {
     end: { dateTime: end.toISO() }
   }
 
-  events = CalendarEvent.Build({ hidePastEvents: true }, calendar, eventData)
+  events = CalendarEvent.Build(new Config({ hidePastEvents: true, calendars: [] }), calendar, eventData)
   expect(events.length).toBe(1)
 
   start = DateTime.now().minus({ days: 1 })
@@ -297,7 +299,7 @@ test('CalendarEvent.Build(HidePastEvent)', () => {
     end: { dateTime: end.toISO() }
   }
 
-  events = CalendarEvent.Build({ hidePastEvents: true }, calendar, eventData)
+  events = CalendarEvent.Build(new Config({ hidePastEvents: true, calendars: [] }), calendar, eventData)
   expect(events.length).toBe(0)
 })
 
