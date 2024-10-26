@@ -45,9 +45,9 @@ export class WeeklyCalendarCard extends LitElement {
       : ''
 
     const localizedWeekDays = LuxonInfo.weekdays(this._config.weekdayFormat)
-    this._heading = html`${this._config.weekdays.map((weekday) => {
-            return `<div class="heading">${localizedWeekDays[weekday]}</div>`
-        }).join('')}`
+    this._heading = this._config.weekdays.map((weekday) => {
+      return localizedWeekDays[weekday]
+    })
   }
 
   /**
@@ -68,10 +68,13 @@ export class WeeklyCalendarCard extends LitElement {
                       ? html`<ha-alert alert-type="error">${this._error}</ha-alert>`
                       : ''
                   }
-                  ${this._title}
+                  ${html`${this._title}`}
 
                   <div class="grid-container heading">
-                      ${this._heading}
+                    ${this._heading
+                        ? this._heading.map(h => html`<div class="heading">${h}</div>`)
+                        : ''
+                    }
                   </div>
                   <div class="grid-container">
                       ${this._renderDays()}
