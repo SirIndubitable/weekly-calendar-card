@@ -87,9 +87,10 @@ export class Config {
   }
 
   get weekdays () {
+    // These weekdays are 0 index, not 1 indexed for some reason
     const days = []
     for (let i = 0; i < 7; i++) {
-      days.push((this._startOfWeek + i) % 7)
+      days.push((this._startOfWeek + i - 1) % 7)
     }
 
     return days

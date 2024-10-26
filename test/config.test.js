@@ -126,7 +126,7 @@ test('Config.weekdays', () => {
     calendars: []
   })
 
-  expect(config.weekdays).toStrictEqual([4, 5, 6, 0, 1, 2, 3])
+  expect(config.weekdays).toStrictEqual([3, 4, 5, 6, 0, 1, 2])
 })
 
 test('Config.formatDay', () => {
