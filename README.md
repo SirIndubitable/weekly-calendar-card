@@ -28,13 +28,13 @@ This calendar will show a number of weeks, starting on the current week.
 | `hidePastEvents`    | bool      | `false`    | Hide events that have passed, instead of greying them out                           |
 
 #### Calendar Type
-| Name                | Type            | Default    | Description                                                                         |
-| :------------------ | :---------------| :----------| :---------------------------------------------------------------------------------- |
-| `entity`            | string          | Required   | Calendar entity                                                                     |
-| `color`             | string          | Optional   | Color to show full/multi day entities                                               |
-| `sorting`           | int             | 100        | The sorting of calendars, if they start at the same time                            |
-| `prefix`            | string or map   | Optional   | Prefix for the event summary, if a map will try to match with default options       |
-| `filter`            | string          | Optional   | Regex filter to hide events                                                         |
+| Name                | Type            | Default         | Description                                                                         |
+| :------------------ | :---------------| :---------------| :---------------------------------------------------------------------------------- |
+| `entity`            | string          | Required        | Calendar entity                                                                     |
+| `color`             | string          | --primary-color | Color to show full/multi day entities                                               |
+| `sorting`           | int             | 100             | The sorting of calendars, if they start at the same time                            |
+| `prefix`            | string or map   | Optional        | Prefix for the event summary, if a map will try to match with default options       |
+| `filter`            | string          | Optional        | Regex filter to hide events                                                         |
 
 ## Example
 ```yaml
@@ -51,7 +51,7 @@ updateInterval: 60
 hidePastEvents: false
 calendars:
   - entity: calendar.test
-    color: red
+    color: var(--label-badge-red)
     prefix: <3
   - entity: calendar.sports
     color: blue

@@ -1,29 +1,48 @@
-import { LitElement, html } from 'lit'
+/* global HTMLElement */
 import { DateTime, Settings as LuxonSettings, Info as LuxonInfo } from 'luxon'
 import styles from './card.styles.js'
 import { CalendarEvent, Helpers } from './data.js'
 import { Config } from './config.js'
 
-export class WeeklyCalendarCard extends LitElement {
+function DEBUG () {
+  // const consolePrefix = '[weekly-calendar-card]'
+  // console.debug(consolePrefix, Array.prototype.join.call(arguments, ' '))
+}
+
+export class WeeklyCalendarCard extends HTMLElement {
   static styles = styles
 
-  _initialized = false
-  _loading = 0
+  _hass
   _events = {}
   _jsonDays = ''
 
-  /**
-   * Get properties
-   *
-   * @return {Object}
-   */
-  static get properties () {
-    return {
-      _days: { type: Array },
-      _config: { type: Object },
-      _isLoading: { type: Boolean },
-      _error: { type: String }
-    }
+  constructor () {
+    super()
+
+    this._card = document.createElement('ha-card')
+    this._card.innerHTML = `
+      <ha-card>
+        <div class="card-content">
+          <ha-alert alert-type="error"></ha-alert>
+          <h1 class="card-title"></h1>
+          <div class="grid-container heading"></div>
+          <div class="grid-container days"></div>
+        </div>
+      </ha-card>
+    `
+
+    this._errorContent = this._card.querySelector('ha-alert')
+    this._titleContent = this._card.querySelector('.card-title')
+    this._headingContent = this._card.querySelector('.heading')
+    this._daysContent = this._card.querySelector('.days')
+
+    this._style = document.createElement('style')
+    this._style.textContent = styles
+
+    this.attachShadow({ mode: 'open' })
+    this.shadowRoot.append(this._style, this._card)
+
+    this._periodicUpdate()
   }
 
   /**
@@ -35,164 +54,132 @@ export class WeeklyCalendarCard extends LitElement {
     this._card_config = config
 
     this._config = new Config(config)
+    DEBUG('Config Set')
 
     if (this._config.locale) {
       LuxonSettings.defaultLocale = this._config.locale
     }
 
-    this._title = this._config.title
-      ? html`<h1 class="card-title">${this._config.title}</h1>`
-      : ''
+    DEBUG(this._config.title)
+    this._titleContent.style.display = this._config.title ? 'block' : 'none'
+    this._titleContent.textContent = this._config.title
 
     const localizedWeekDays = LuxonInfo.weekdays(this._config.weekdayFormat)
-    this._heading = this._config.weekdays.map((weekday) => {
-      return localizedWeekDays[weekday]
-    })
+    this._headingContent.innerHTML = this._config.weekdays.map((weekday) => {
+      return `<div class="heading">${localizedWeekDays[weekday]}</div>`
+    }).join('')
   }
 
-  /**
-   * Render
-   *
-   * @return {Object}
-   */
-  render () {
-    if (!this._initialized) {
-      this._initialized = true
-      this._waitForHassAndConfig()
-    }
+  set error (error) {
+    this._errorContent.style.display = error ? 'block' : 'none'
+    this._errorContent.textContent = error
+  }
 
-    return html`
-          <ha-card>
-              <div class="card-content">
-                  ${this._error
-                      ? html`<ha-alert alert-type="error">${this._error}</ha-alert>`
-                      : ''
-                  }
-                  ${html`${this._title}`}
+  get error () {
+    return this._errorContent.textContent
+  }
 
-                  <div class="grid-container heading">
-                    ${this._heading
-                        ? this._heading.map(h => html`<div class="heading">${h}</div>`)
-                        : ''
-                    }
-                  </div>
-                  <div class="grid-container">
-                      ${this._renderDays()}
-                  </div>
-                  ${this._isLoading
-                      ? html`<div class="loader"></div>`
-                      : ''
-                  }
-              </div>
-          </ha-card>
-      `
+  _renderHeading () {
+    const localizedWeekDays = LuxonInfo.weekdays(this._config.weekdayFormat)
+    return this._config.weekdays.map((weekday) => {
+      return `<div class="heading">${localizedWeekDays[weekday]}</div>`
+    }).join('')
   }
 
   _renderDays () {
     if (!this._days) {
-      return html``
+      return ''
     }
 
-    return html`
-          ${this._days.map((day) => {
-              return html`
-                  <div class="day ${day.class}" data-date="${day.date.day}" data-weekday="${day.date.weekday}" data-month="${day.date.month}" data-year="${day.date.year}" data-week="${day.date.weekNumber}">
-                      <div class="date">
-                      <hr/>
-                        <span class="number">${this._config.formatDay(day.date)}</span>
-                      </div>
+    this._daysContent.innerHTML = this._days.map((day) => {
+      return `
+            <div class="day ${day.class}" data-date="${day.date.day}" data-weekday="${day.date.weekday}" data-month="${day.date.month}" data-year="${day.date.year}" data-week="${day.date.weekNumber}">
+              <div class="date">
+              <hr/>
+              <span class="number">${this._config.formatDay(day.date)}</span>
+              </div>
 
-                      <div class="events">
-                          ${day.events.length === 0
-                              ? html`
-                                  <div class="none"></div>
-                              `
-                              : html`
-                                  ${day.events.map((event) => {
-                                      return html`
-                                          <div class="event ${event.class}" data-entity="${event.calendar_entity}" style="${event.multiDay || event.fullDay ? 'background' : '--border-color'}: ${event.color}" @click="${() => { this._handleEventClick(event) }}">
-                                            <div class="title">${event.renderSummary(this._config)}</div>
-                                          </div>
-                                      `
-                                  })}
-                              `
-                          }
-                      </div>
-                  </div>
-              `
-          })}
-      `
+              <div class="events">
+                ${day.events.length === 0
+                  ? '<div class="none"></div>'
+                  : day.events.map((event) => {
+                      return `
+                        <div class="event ${event.class}" data-entity="${event.calendar_entity}" style="${event.multiDay || event.fullDay ? `background: ${event.color}` : ''} ">
+                          <div class="title"><span class="dot">${event.renderSummary(this._config)}</span></div>
+                        </div>
+                      `
+                    }).join('')
+                }
+              </div>
+            </div>
+          `
+    }).join('')
   }
 
-  _waitForHassAndConfig () {
+  _periodicUpdate () {
     if (!this.hass || !this._config) {
-      window.setTimeout(() => {
-        this._waitForHassAndConfig()
-      }, 50)
+      DEBUG('Waiting...', Boolean(this.hass), Boolean(this._config))
+      setTimeout(() => this._periodicUpdate(), 50)
       return
     }
 
+    DEBUG('Update')
     this._updateEvents()
+    this._updateDays()
+
+    DEBUG('Update Done')
+    setTimeout(() => this._periodicUpdate(), this._config.updateInterval * 1000)
   }
 
   _updateEvents () {
-    if (this._loading > 0) {
+    if (this._loadingEvents > 0) {
       return
     }
 
-    this._loading++
-    this._isLoading = true
-    this._error = ''
-    this._events = {}
+    DEBUG('Update Events')
+
+    this.error = ''
 
     const startDate = this._config.startDate
     const endDate = this._config.endDate
 
+    this._events = {}
+    this._loadingEvents = this._config.calendars.length
     this._config.calendars.forEach(calendar => {
-      this._loading++
       const request = 'calendars/' + calendar.entity + '?start=' + encodeURIComponent(startDate.toISO()) + '&end=' + encodeURIComponent(endDate.toISO())
       this.hass
         .callApi('get', request)
         .then(response => {
+          if (this._loadingEvents === 0) {
+            // Something errored, just bail
+            return
+          }
+          DEBUG('Update Calendar', calendar.entity)
           response.forEach(event => {
-            this._safePushEventData(CalendarEvent.Build(this._config, calendar, event))
+            this._safePush(this._events, CalendarEvent.Build(this._config, calendar, event))
           })
+          this._loadingEvents--
         })
         .catch(error => {
           console.error(error)
-          this._error = `Error while fetching calendar ${calendar.entity}: ${error.error}`
-          this._loading = 0
+          this.error = `Error while fetching calendar ${calendar.entity}: ${error.error}`
+          this._loadingEvents = 0
 
-          throw new Error(this._error)
+          throw new Error(this.error)
         })
-      this._loading--
     })
-
-    const checkLoading = window.setInterval(() => {
-      if (this._loading === 0) {
-        clearInterval(checkLoading)
-        if (!this._error) {
-          this._updateCard()
-        }
-        this._isLoading = false
-
-        window.setTimeout(() => {
-          this._updateEvents()
-        }, this._config.updateInterval * 1000)
-      }
-    }, 50)
-
-    this._loading--
   }
 
-  _safePushEventData (events) {
+  _safePush (dict, events) {
+    DEBUG('Add Events', events.length)
     events.forEach(event => {
       const dateKey = event.start.toISODate()
-      if (!(dateKey in this._events)) {
-        this._events[dateKey] = []
+      DEBUG('  ', dateKey)
+      if (!(dateKey in dict)) {
+        dict[dateKey] = []
       }
 
-      this._events[dateKey].push(event)
+      dict[dateKey].push(event)
     })
   }
 
@@ -227,17 +214,27 @@ export class WeeklyCalendarCard extends LitElement {
     return classes.join(' ')
   }
 
-  _updateCard () {
+  _updateDays () {
+    if (this.error) {
+      return
+    }
+    if (this._loadingEvents > 0) {
+      setTimeout(() => this._updateDays(), 50)
+      return
+    }
+
+    DEBUG('Update Card')
     const days = []
 
     let yesterdayEvents = []
     this._config.days.forEach(currentDay => {
       let events = []
-
       const dateKey = currentDay.toISODate()
       if (dateKey in this._events) {
         events = this._events[dateKey].sort(CalendarEvent.compareTo)
       }
+
+      DEBUG('  ', dateKey, events.length)
 
       // This loop reorders the multi-day events so that they are displayed in the
       // same location on the calendar as the previous day of the event.
@@ -281,10 +278,13 @@ export class WeeklyCalendarCard extends LitElement {
       yesterdayEvents = events
     })
 
+    this._days = days
     const jsonDays = JSON.stringify(days)
-    if (jsonDays !== this._jsonDays) {
-      this._days = days
+
+    if (this._jsonDays !== jsonDays) {
       this._jsonDays = jsonDays
+      DEBUG(this._jsonDays)
+      this._renderDays()
     }
   }
 }

@@ -1,6 +1,4 @@
-import { css } from 'lit'
-
-export default css`
+export default `
     ha-card {
         --days-spacing: 10px;
         --day-date-number-font-size: 1.2rem;
@@ -51,7 +49,7 @@ export default css`
     .grid-container .day.today hr {
         color: transparent;
         border-top-width: 4px;
-        border-top-color: #512888;
+        border-top-color: var(--accent-color);
         margin-bottom: 7px;
     }
 
@@ -80,12 +78,6 @@ export default css`
     }
 
     .grid-container .day .events .event {
-        cursor: pointer;
-        margin-left: var(--days-spacing);
-    }
-
-    .grid-container .day .events .event {
-        cursor: pointer;
         margin-left: var(--days-spacing);
     }
 

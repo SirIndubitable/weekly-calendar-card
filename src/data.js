@@ -56,7 +56,7 @@ export class CalendarEvent {
       this.fullDay = false
       this.multiDay = false
     }
-    this.color = calendar.color ?? 'inherit'
+    this.color = calendar.color ?? ''
     this.calendar = calendar
     this.calendar_entity = calendar.entity ?? ''
     this.calendarSorting = calendar.sorting ?? 100
