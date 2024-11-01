@@ -125,7 +125,7 @@ export class Config {
 export class CalendarConfig {
   constructor (config) {
     this.entity = validateString(config, 'entity')
-    this.color = validateString(config, 'color', 'inherit')
+    this.color = validateString(config, 'color', 'var(--primary-color)')
     this.sorting = validateNumber(config, 'sorting', 100)
     this._filter = validateString(config, 'filter', null)
 

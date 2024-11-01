@@ -16,5 +16,8 @@ module.exports = {
       lines: 65,
       statements: 65
     }
+  },
+  fakeTimers: {
+    enableGlobally: true
   }
 }
