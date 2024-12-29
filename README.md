@@ -1,15 +1,19 @@
 # Weekly Calendar Card
-[![hacs][hacs-badge]][hacs-url]
-[![release][release-badge]][release-url]
-![downloads][downloads-badge]
-![build][build-badge]
+
+[![hacs](https://img.shields.io/badge/hacs-plugin-orange.svg?style=flat-square)](https://github.com/hacs/integration)
+[![release](https://img.shields.io/github/v/release/sirindubitable/weekly-calendar-card?style=flat-square)](https://github.com/sirindubitable/weekly-calendar-card/releases)
+![downloads](https://img.shields.io/github/downloads/sirindubitable/weekly-calendar-card/total?style=flat-square)
+![build](https://img.shields.io/github/actions/workflow/status/sirindubitable/weekly-calendar-card/build.yml?branch=main&style=flat-square)
 
 ![Example](./resources/example.png)
+
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=SirIndubitable&repository=weekly-calendar-card)
 
 ## Overview
 This calendar grew out of my desire to have calendar displayed on my wall that was pretty.
 
 This calendar will show a number of weeks, starting on the current week.
+
 
 ## Configuration Options
 
