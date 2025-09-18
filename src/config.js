@@ -44,7 +44,7 @@ export class Config {
   constructor (config) {
     this.calendars = config.calendars.map(calendar => new CalendarConfig(calendar))
 
-    const startOfWeekname = validateString(config, 'startOfWeek', 'sunday')
+    const startOfWeekname = validateString(config, 'startOfWeek', 'sunday').toLowerCase()
     if (!Config._weekdays.includes(startOfWeekname)) {
       throw new Error(`startOfWeek ${startOfWeekname} was not one of [${Config._weekdays.join(', ')}]`)
     }
@@ -61,6 +61,7 @@ export class Config {
     this.title = validateString(config, 'title', null)
     this.updateInterval = validateNumber(config, 'updateInterval', 60)
     this.hidePastEvents = validateBoolean(config, 'hidePastEvents', false)
+    this.showWeekNumbers = validateBoolean(config, 'showWeekNumbers', false)
   }
 
   shouldFilterOut (summary) {
@@ -72,7 +73,7 @@ export class Config {
   }
 
   get weekdayFormat () {
-    return this.longWeekdays ? 'long' : 'short'
+    return this._longWeekdayFormat ? 'long' : 'short'
   }
 
   get days () {
