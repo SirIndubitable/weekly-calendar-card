@@ -287,4 +287,69 @@ export class WeeklyCalendarCard extends HTMLElement {
       this._renderDays()
     }
   }
+
+  static getConfigForm () {
+    return {
+      schema: [
+        { name: 'title', selector: { text: {} } },
+        {
+          name: 'calendars',
+          required: true,
+          selector: {
+            object: {
+              label_field: 'entity',
+              multiple: true,
+              fields:
+          {
+            entity: { required: true, selector: { entity: { filter: { domain: 'calendar' } } } },
+            color: { selector: { text: { } } },
+            sorting: { selector: { number: { } } },
+            filter: { selector: { text: { } } },
+            prefix: { selector: { object: { } } }
+          }
+            }
+          }
+        },
+        { name: 'weeks', selector: { number: {} } },
+        { name: 'startOfWeek', selector: { text: {} } },
+        { name: 'local', selector: { text: {} } },
+        { name: 'filter', selector: { text: {} } },
+        { name: 'dayFormat', selector: { text: {} } },
+        { name: 'timeFormat', selector: { text: {} } },
+        { name: 'longWeekdays', selector: { boolean: {} } },
+        { name: 'hidePastEvents', selector: { boolean: {} } },
+        { name: 'updateInterval', selector: { number: {} } }
+      ],
+      computeLabel: (schema) => {
+        switch (schema.name) {
+          case 'weeks':
+            return 'Number of Weeks'
+          case 'startOfWeek':
+            return 'Start of Week'
+          case 'dayFormat':
+            return 'Day Format'
+          case 'timeFormat':
+            return 'Time Format'
+          case 'longWeekdays':
+            return 'Render Weekdays in Long Format'
+          case 'updateInterval':
+            return 'Update Interval (seconds)'
+        }
+
+        return undefined
+      },
+      computeHelper: (schema) => {
+        switch (schema.name) {
+          case 'local':
+            return 'The time Local, \'US/Central\' for example'
+          case 'sorting':
+            return 'The sorting value of calendars, if they start at the same time'
+        }
+        return undefined
+      },
+      assertConfig: (config) => {
+        // new Config(config)
+      }
+    }
+  }
 }
