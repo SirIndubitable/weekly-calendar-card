@@ -43,6 +43,7 @@ export class Config {
 
   constructor (config) {
     this.calendars = config.calendars.map(calendar => new CalendarConfig(calendar))
+    this.headerCalendars = config.headerCalendars.map(headerCalendar => new HeaderCalendarConfig(headerCalendar))
 
     const startOfWeekname = validateString(config, 'startOfWeek', 'sunday').toLowerCase()
     if (!Config._weekdays.includes(startOfWeekname)) {
@@ -120,6 +121,24 @@ export class Config {
 
   formatTime (datetime) {
     return datetime.toFormat(this._timeFormat).replace('AM', 'am').replace('PM', 'pm')
+  }
+}
+
+export class HeaderCalendarConfig {
+  constructor (config) {
+    this._config = config
+    this.entity = validateString(config, 'entity')
+    this.icon = validateString(config, 'icon', null)
+    this.sorting = validateNumber(config, 'sorting', 100)
+    this._filter = validateString(config, 'filter', null)
+  }
+
+  shouldFilterOut (summary) {
+    if (this._filter == null) {
+      return false
+    }
+
+    return new RegExp(this._filter).test(summary)
   }
 }
 

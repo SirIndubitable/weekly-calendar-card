@@ -42,6 +42,48 @@ export class Helpers {
   }
 }
 
+export class HeaderEvent {
+  constructor (event, calendar, startDate) {
+    this.start = startDate
+    this.summary = event.summary ?? null
+    this.icon = calendar.icon
+    this.sorting = calendar.sorting
+  }
+
+  static Build (config, calendar, eventData) {
+    if (config.shouldFilterOut(eventData.summary)) {
+      return []
+    }
+    if (calendar.shouldFilterOut(eventData.summary)) {
+      return []
+    }
+
+    let startDate = Helpers.convertApiDate(eventData.start)
+    const endDate = Helpers.convertApiDate(eventData.end)
+
+    const events = []
+    while (startDate < endDate) {
+      events.push(new HeaderEvent(eventData, calendar, startDate))
+
+      startDate = startDate.plus({ days: 1 }).startOf('day')
+    }
+
+    return events
+  }
+
+  static compareTo (event1, event2) {
+    if (+event1.start !== +event2.start) {
+      return event1.start < event2.start ? -1 : 1
+    }
+
+    if (event1.sorting !== event2.sorting) {
+      return event1.sorting < event2.sorting ? -1 : 1
+    }
+
+    return event1.summary.localeCompare(event2.summary)
+  }
+}
+
 export class CalendarEvent {
   constructor (event, startDate, endDate, calendar) {
     this.start = startDate
@@ -234,8 +276,8 @@ export class CalendarEvent {
       return event1.start < event2.start ? -1 : 1
     }
 
-    if (event1.calendarSorting !== event2.calendarSorting) {
-      return event1.calendarSorting < event2.calendarSorting ? -1 : 1
+    if (event1.calendar.sorting !== event2.calendar.sorting) {
+      return event1.calendar.sorting < event2.calendar.sorting ? -1 : 1
     }
 
     return event1.summary.localeCompare(event2.summary)
