@@ -276,8 +276,8 @@ export class CalendarEvent {
       return event1.start < event2.start ? -1 : 1
     }
 
-    if (event1.calendar.sorting !== event2.calendar.sorting) {
-      return event1.calendar.sorting < event2.calendar.sorting ? -1 : 1
+    if (event1.calendarSorting !== event2.calendarSorting) {
+      return event1.calendarSorting < event2.calendarSorting ? -1 : 1
     }
 
     return event1.summary.localeCompare(event2.summary)
