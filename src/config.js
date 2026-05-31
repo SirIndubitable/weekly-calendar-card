@@ -43,7 +43,7 @@ export class Config {
 
   constructor (config) {
     this.calendars = config.calendars.map(calendar => new CalendarConfig(calendar))
-    this.headerCalendars = config.headerCalendars.map(headerCalendar => new HeaderCalendarConfig(headerCalendar))
+    this.headerCalendars = config.headerCalendars ? config.headerCalendars.map(headerCalendar => new HeaderCalendarConfig(headerCalendar)) : {}
 
     const startOfWeekname = validateString(config, 'startOfWeek', 'sunday').toLowerCase()
     if (!Config._weekdays.includes(startOfWeekname)) {
