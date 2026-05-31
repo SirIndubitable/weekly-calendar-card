@@ -1,7 +1,7 @@
 /* global HTMLElement */
 import { DateTime, Settings as LuxonSettings, Info as LuxonInfo } from 'luxon'
 import styles from './card.styles.js'
-import { CalendarEvent, Helpers } from './data.js'
+import { CalendarEvent, HeaderEvent, Helpers } from './data.js'
 import { Config } from './config.js'
 
 function DEBUG () {
@@ -51,8 +51,6 @@ export class WeeklyCalendarCard extends HTMLElement {
    * @param {Object} config
    */
   setConfig (config) {
-    this._card_config = config
-
     this._config = new Config(config)
     DEBUG('Config Set')
 
@@ -64,10 +62,7 @@ export class WeeklyCalendarCard extends HTMLElement {
     this._titleContent.style.display = this._config.title ? 'block' : 'none'
     this._titleContent.textContent = this._config.title
 
-    const localizedWeekDays = LuxonInfo.weekdays(this._config.weekdayFormat)
-    this._headingContent.innerHTML = this._config.weekdays.map((weekday) => {
-      return `<div class="heading">${localizedWeekDays[weekday]}</div>`
-    }).join('')
+    this._headingContent.innerHTML = this._renderHeading()
   }
 
   set error (error) {
@@ -96,7 +91,16 @@ export class WeeklyCalendarCard extends HTMLElement {
             <div class="day ${day.class}" data-date="${day.date.day}" data-weekday="${day.date.weekday}" data-month="${day.date.month}" data-year="${day.date.year}" data-week="${day.date.weekNumber}">
               <div class="date">
               <hr/>
-              <span class="number">${this._config.formatDay(day.date)}</span>
+                <div class="date-header">
+                  <span class="number">${this._config.formatDay(day.date)}</span>
+                  <span class="icons">
+                    ${day.headers.length === 0
+                      ? ''
+                      : day.headers.map((header) => {
+                          return `${header.icon}`
+                        }).join('')
+                    }</span>
+                </div>
               </div>
 
               <div class="events">
@@ -104,7 +108,7 @@ export class WeeklyCalendarCard extends HTMLElement {
                   ? '<div class="none"></div>'
                   : day.events.map((event) => {
                       return `
-                        <div class="event ${event.class}" data-entity="${event.calendar_entity}" style="${event.multiDay || event.fullDay ? `background: ${event.color}` : ''} ">
+                        <div class="event ${event.class}" data-entity="${event.calendar.entity}" style="${event.multiDay || event.fullDay ? `background: ${event.calendar.color}` : ''} ">
                           <div class="title"><span class="dot">${event.renderSummary(this._config)}</span></div>
                         </div>
                       `
@@ -131,6 +135,28 @@ export class WeeklyCalendarCard extends HTMLElement {
     setTimeout(() => this._periodicUpdate(), this._config.updateInterval * 1000)
   }
 
+  _getCalendarEvents (calendar, startDate, endDate, addEvent) {
+    const request = 'calendars/' + calendar.entity + '?start=' + encodeURIComponent(startDate.toISO()) + '&end=' + encodeURIComponent(endDate.toISO())
+    this.hass
+      .callApi('get', request)
+      .then(response => {
+        if (this._loadingEvents === 0) {
+        // Something errored, just bail
+          return
+        }
+        DEBUG('Update Calendar', calendar.entity)
+        response.forEach(event => { addEvent(event) })
+        this._loadingEvents--
+      })
+      .catch(error => {
+        console.error(error)
+        this.error = `Error while fetching calendar ${calendar.entity}: ${error.error}`
+        this._loadingEvents = 0
+
+        throw new Error(this.error)
+      })
+  }
+
   _updateEvents () {
     if (this._loadingEvents > 0) {
       return
@@ -144,30 +170,10 @@ export class WeeklyCalendarCard extends HTMLElement {
     const endDate = this._config.endDate
 
     this._events = {}
-    this._loadingEvents = this._config.calendars.length
-    this._config.calendars.forEach(calendar => {
-      const request = 'calendars/' + calendar.entity + '?start=' + encodeURIComponent(startDate.toISO()) + '&end=' + encodeURIComponent(endDate.toISO())
-      this.hass
-        .callApi('get', request)
-        .then(response => {
-          if (this._loadingEvents === 0) {
-            // Something errored, just bail
-            return
-          }
-          DEBUG('Update Calendar', calendar.entity)
-          response.forEach(event => {
-            this._safePush(this._events, CalendarEvent.Build(this._config, calendar, event))
-          })
-          this._loadingEvents--
-        })
-        .catch(error => {
-          console.error(error)
-          this.error = `Error while fetching calendar ${calendar.entity}: ${error.error}`
-          this._loadingEvents = 0
-
-          throw new Error(this.error)
-        })
-    })
+    this._headerEvents = {}
+    this._loadingEvents = this._config.calendars.length + this._config.headerCalendars.length
+    this._config.calendars.forEach(calendar => { this._getCalendarEvents(calendar, startDate, endDate, event => this._safePush(this._events, CalendarEvent.Build(this._config, calendar, event))) })
+    this._config.headerCalendars.forEach(headerCalendar => { this._getCalendarEvents(headerCalendar, startDate, endDate, event => this._safePush(this._headerEvents, HeaderEvent.Build(this._config, headerCalendar, event))) })
   }
 
   _safePush (dict, events) {
@@ -234,6 +240,11 @@ export class WeeklyCalendarCard extends HTMLElement {
         events = this._events[dateKey].sort(CalendarEvent.compareTo)
       }
 
+      let headers = []
+      if (dateKey in this._headerEvents) {
+        headers = this._headerEvents[dateKey].sort(HeaderEvent.compareTo)
+      }
+
       DEBUG('  ', dateKey, events.length)
 
       // This loop reorders the multi-day events so that they are displayed in the
@@ -272,6 +283,7 @@ export class WeeklyCalendarCard extends HTMLElement {
       days.push({
         date: currentDay,
         events,
+        headers,
         class: this._getDayClass(currentDay)
       })
 

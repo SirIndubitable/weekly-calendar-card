@@ -54,15 +54,28 @@ export default `
     }
 
     .grid-container .day .date {
+        display: inline-block;
+        width: stretch;
         position: relative;
         z-index: 1;
         margin-left: var(--days-spacing);
         margin-right: var(--days-spacing);
     }
 
-    .grid-container .day .date .number {
+    .grid-container .day .date .date-header {
         font-size: var(--day-date-number-font-size);
         line-height: var(--day-date-number-line-height);
+        display: flex;
+        width: stretch;
+        justify-content: space-between;
+    }
+
+    .grid-container .day .date .date-header .number {
+        text-align: left;
+    }
+
+    .grid-container .day .date .date-header .icons {
+        text-align: right;
     }
 
     .grid-container .day .events {
